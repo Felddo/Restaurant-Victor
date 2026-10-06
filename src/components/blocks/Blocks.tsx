@@ -8,7 +8,7 @@ export const Blocks = () => {
     >
       <ul className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:min-h-[500px]">
           {VICTOR_MENU.map((item, i) => (
-            <Block key={item.dish} dish={item.dish} description={item.description} price={item.price} image={item.image}/>
+            <Block id={item.id} dish={item.dish} description={item.description} price={item.price} image={item.image}/>
         ))}
       </ul>
     </section>

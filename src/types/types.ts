@@ -10,6 +10,7 @@
 // }
 
 export type TDISH = {
+  id: number;
   dish: string;
   description: string;
   price: number;
@@ -24,4 +25,8 @@ export type TFooterPlaces = {
 export type TOrderCard = {
   isOpen: boolean;
   onClose: () => void;
+};
+
+export type TCartItem = TDISH & {
+  qty: number;
 };
