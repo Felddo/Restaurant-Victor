@@ -5,12 +5,17 @@ type Props = {
   places: TFooterPlaces[];
   totalPrice: number;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (data: {
+    place: string;
+    date: string;
+    time: string;
+    guests: number;
+    name: string;
+    phone: string;
+  }) => void;
 };
 
-// Часовые слоты
 const TIME_SLOTS = [
-  "10:00–11:00",
   "11:00–12:00",
   "12:00–13:00",
   "13:00–14:00",
@@ -23,25 +28,33 @@ const TIME_SLOTS = [
   "21:00–22:00",
 ];
 
-export const BookingModal = ({
-  places,
-  totalPrice,
-  onClose,
-  onConfirm,
-}: Props) => {
+const GUEST_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Сегодняшняя дата в формате YYYY-MM-DD
+const getTodayISO = () => {
+  const d = new Date();
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tz).toISOString().split("T")[0];
+};
+
+export const BookingModal = ({ places, totalPrice, onClose, onConfirm }: Props) => {
+  const today = getTodayISO();
+
   const [place, setPlace] = useState<string>(places[0]?.name ?? "");
+  const [date, setDate] = useState<string>(today);
   const [time, setTime] = useState<string>("");
+  const [guests, setGuests] = useState<number>(2);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
 
   const handleConfirm = () => {
-    if (!place || !time || !name.trim() || !phone.trim()) {
-      setError("Заполните все поля, чтобы мы знали, кого и где ждать.");
+    if (!place || !date || !time || !name.trim() || !phone.trim()) {
+      setError("Заполните все поля, чтобы мы знали, кого, где и когда ждать.");
       return;
     }
     setError("");
-    onConfirm();
+    onConfirm({ place, date, time, guests, name, phone });
   };
 
   return (
@@ -91,6 +104,39 @@ export const BookingModal = ({
           </div>
         </div>
 
+        {/* Дата и количество гостей */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
+              Дата
+            </label>
+            <input
+              type="date"
+              min={today}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
+              Гостей
+            </label>
+            <select
+              value={guests}
+              onChange={(e) => setGuests(Number(e.target.value))}
+              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none bg-white"
+            >
+              {GUEST_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} {n === 1 ? "гость" : n < 5 ? "гостя" : "гостей"}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Время */}
         <div>
           <label className="block text-sm font-semibold mb-2 text-gray-700">
@@ -135,7 +181,8 @@ export const BookingModal = ({
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <p className="text-sm text-gray-500 text-center">
-          Итого к заказу: <span className="font-bold text-black">{totalPrice} ₽</span>
+          Итого к заказу:{" "}
+          <span className="font-bold text-black">{totalPrice} ₽</span>
         </p>
 
         <button

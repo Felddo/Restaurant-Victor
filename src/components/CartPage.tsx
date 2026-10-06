@@ -5,12 +5,23 @@ import { Header } from "./header/Header";
 import { FOOTER_PLACES } from "../data/data";
 import { BookingModal } from "./auxiliary/BookingModal";
 
+type TBooking = {
+  place: string;
+  date: string;
+  time: string;
+  guests: number;
+  name: string;
+  phone: string;
+};
+
 export const CartPage = () => {
   const { cart, changeQty, removeFromCart, clearCart, totalPrice } = useCart();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [bookingInfo, setBookingInfo] = useState<TBooking | null>(null);
 
-  const handleBooked = () => {
+  const handleBooked = (data: TBooking) => {
+    setBookingInfo(data);
     setIsBookingOpen(false);
     setIsSuccess(true);
     clearCart();
@@ -22,17 +33,30 @@ export const CartPage = () => {
 
       <main className="max-w-4xl mx-auto px-6 py-32">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-serif font-bold">Ваш Триумфальный Заказ</h1>
+          <h1 className="text-4xl font-serif font-bold">
+            Ваш Триумфальный Заказ
+          </h1>
           <Link to="/" className="text-primary hover:underline">
             ← Вернуться в меню
           </Link>
         </div>
 
-        {isSuccess ? (
+        {isSuccess && bookingInfo ? (
           <div className="bg-white rounded-2xl p-8 shadow text-center">
-            <h2 className="text-2xl font-bold mb-2">Столик забронирован!</h2>
-            <p className="text-gray-600 mb-6">
-              Мы ждём вас. Начнем готовить заказ к указанному времени.
+            <h2 className="text-2xl font-bold mb-3">
+              Столик забронирован!
+            </h2>
+            <p className="text-gray-700 mb-1">
+              <span className="font-semibold">{bookingInfo.place}</span>
+            </p>
+            <p className="text-gray-700 mb-1">
+              {bookingInfo.date} · {bookingInfo.time}
+            </p>
+            <p className="text-gray-700 mb-1">
+              Гостей: {bookingInfo.guests}
+            </p>
+            <p className="text-gray-500 text-sm mb-6">
+              {bookingInfo.name}, будем ждать вас!
             </p>
             <Link
               to="/"
