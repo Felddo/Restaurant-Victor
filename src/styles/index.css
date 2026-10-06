@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #bee0e8;
+  --foreground: #ffffff;
+
+  --primary: #3fcda0;
+  --secondary: #cd863f80;
+  --inf: gray;
+
+  --font-sans: "Inter", sans-serif;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-inf: var(--inf);
+
+  --font-sans: var(--font-sans);
+  
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: #1d1d1f;
+    font-family: var(--font-sans) !important;
+  }
+}
+
+@layer components {
+  .title-hero {
+    @apply text-base md:text-lg lg:text-xl font-bold;
+  }
+
+  .title-card {
+    @apply text-2xl md:text-2xl lg:text-3xl font-bold;
+  }
+
+  .title-card {
+    @apply text-2xl md:text-2xl lg:text-3xl font-bold;
+  }
+
+  .title-footer {
+    @apply text-xl md:text-2xl font-bold;
+  }
+
+  .text-footer {
+    @apply text-gray-600 text-xs md:text-sm;
+  }
+
+  .text-main {
+    @apply text-base md:text-lg;
+  }
+
+  .btn-text {
+    @apply text-sm md:text-base;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
