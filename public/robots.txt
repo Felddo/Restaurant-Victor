@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://apartsvl.ru/sitemap.xml
