@@ -1,9 +1,20 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { Header } from "./header/Header";
+import { FOOTER_PLACES } from "../data/data";
+import { BookingModal } from "./auxiliary/BookingModal";
 
 export const CartPage = () => {
   const { cart, changeQty, removeFromCart, clearCart, totalPrice } = useCart();
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleBooked = () => {
+    setIsBookingOpen(false);
+    setIsSuccess(true);
+    clearCart();
+  };
 
   return (
     <div className="min-h-screen bg-neutral-100">
@@ -17,12 +28,27 @@ export const CartPage = () => {
           </Link>
         </div>
 
-        {cart.length === 0 ? (
-          <p className="text-gray-500 text-lg">Пока здесь пусто. Самое время совершить гастрономический подвиг.</p>
+        {isSuccess ? (
+          <div className="bg-white rounded-2xl p-8 shadow text-center">
+            <h2 className="text-2xl font-bold mb-2">Столик забронирован!</h2>
+            <p className="text-gray-600 mb-6">
+              Мы ждём вас. Начнем готовить заказ к указанному времени.
+            </p>
+            <Link
+              to="/"
+              className="inline-block bg-primary text-white font-bold px-6 py-3 rounded-full hover:scale-105 transition"
+            >
+              Вернуться в меню
+            </Link>
+          </div>
+        ) : cart.length === 0 ? (
+          <p className="text-gray-500 text-lg">
+            Пока здесь пусто. Самое время совершить гастрономический подвиг.
+          </p>
         ) : (
           <>
             <ul className="flex flex-col gap-4">
-              {cart.map(item => (
+              {cart.map((item) => (
                 <li
                   key={item.id}
                   className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow"
@@ -76,9 +102,25 @@ export const CartPage = () => {
               </button>
               <p className="text-2xl font-bold">Итого: {totalPrice} ₽</p>
             </div>
+
+            <button
+              onClick={() => setIsBookingOpen(true)}
+              className="w-full mt-6 bg-primary text-white font-bold uppercase py-4 rounded-2xl shadow-lg shadow-primary/40 hover:scale-[1.01] transition"
+            >
+              Забронировать столик
+            </button>
           </>
         )}
       </main>
+
+      {isBookingOpen && (
+        <BookingModal
+          places={FOOTER_PLACES}
+          totalPrice={totalPrice}
+          onClose={() => setIsBookingOpen(false)}
+          onConfirm={handleBooked}
+        />
+      )}
     </div>
   );
 };
