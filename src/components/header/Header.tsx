@@ -1,11 +1,8 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { NameVictor } from "../auxiliary/NameVictor";
-import { OrderCard } from "../auxiliary/OrderCard";
 import { useCart } from "../../context/CartContext";
 
 export const Header = () => {
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const { totalCount } = useCart();
 
   return (
@@ -22,9 +19,9 @@ export const Header = () => {
             <NameVictor />
           </div>
 
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={() => setIsCartOpen(true)}
+          <div className="flex justify-center">
+            <Link
+              to="/cart"
               className="relative bg-primary px-6 py-3 text-white font-bold rounded-full hover:scale-105 duration-200"
             >
               Корзина
@@ -33,19 +30,10 @@ export const Header = () => {
                   {totalCount}
                 </span>
               )}
-            </button>
-
-            <Link
-              to="/cart"
-              className="hidden md:inline-flex items-center px-4 py-3 text-primary font-bold rounded-full border border-primary hover:bg-primary hover:text-white transition"
-            >
-              Открыть страницу
             </Link>
           </div>
         </div>
       </div>
-
-      <OrderCard isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </header>
   );
 };
