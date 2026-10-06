@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TFooterPlaces } from "../../types/types";
 
 type TBooking = {
@@ -52,6 +52,23 @@ const isNotPast = (d: number, m: number, y: number) => {
   return d >= today.d;
 };
 
+const isToday = (d: number, m: number, y: number) => {
+  const t = getToday();
+  return d === t.d && m === t.m && y === t.y;
+};
+
+// Достаём час начала слота: "12:00–13:00" → 12
+const getSlotStartHour = (slot: string) =>
+  Number(slot.split("–")[0].split(":")[0]);
+
+// Прошёл ли слот (только для сегодняшнего дня)
+const isSlotPast = (slot: string, d: number, m: number, y: number) => {
+  if (!isToday(d, m, y)) return false;
+  const now = new Date();
+  const startHour = getSlotStartHour(slot);
+  return now.getHours() >= startHour;
+};
+
 const daysInMonth = (m: number, y: number) => new Date(y, m, 0).getDate();
 const pad = (n: number) => String(n).padStart(2, "0");
 const formatDMY = (d: number, m: number, y: number) =>
@@ -94,6 +111,14 @@ export const BookingModal = ({
   const maxDay = daysInMonth(month, year);
   const days = Array.from({ length: maxDay }, (_, i) => i + 1);
 
+  // Если выбранный слот стал недоступен (например, сменили дату на сегодня,
+  // а слот уже прошёл) — сбрасываем его.
+  useEffect(() => {
+    if (time && isSlotPast(time, day, month, year)) {
+      setTime("");
+    }
+  }, [day, month, year, time]);
+
   const handleConfirm = () => {
     if (!place || !time || !name.trim() || !phone.trim()) {
       setError("Заполните все поля, чтобы мы знали, кого, где и когда ждать.");
@@ -101,6 +126,10 @@ export const BookingModal = ({
     }
     if (!isNotPast(day, month, year)) {
       setError("Дата не может быть раньше сегодняшней.");
+      return;
+    }
+    if (isSlotPast(time, day, month, year)) {
+      setError("Это время уже прошло — выберите более поздний слот.");
       return;
     }
     setError("");
@@ -119,21 +148,15 @@ export const BookingModal = ({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Затемнённый фон */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/*
-        Внешний контейнер: отвечает за скругление и обрезку.
-        overflow-hidden — скроллбар внутреннего блока не вылезет за углы.
-      */}
       <div
         className="relative bg-white w-full max-w-lg rounded-4xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Кнопка закрытия — фиксирована в углу, не скроллится */}
         <button
           onClick={onClose}
           className="absolute top-4 right-5 z-10 text-2xl text-gray-400 hover:text-black transition-colors"
@@ -142,11 +165,6 @@ export const BookingModal = ({
           ×
         </button>
 
-        {/*
-          Внутренний скроллируемый блок.
-          pr-6 — чтобы контент не прилипал к скроллбару.
-          pt-12 — чтобы заголовок не лез под кнопку ×.
-        */}
         <div className="overflow-y-auto px-8 pt-12 pb-8 flex flex-col gap-4">
           <h2 className="text-2xl font-bold text-center italic">
             Забронировать столик
@@ -256,21 +274,36 @@ export const BookingModal = ({
               Выберите время
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {TIME_SLOTS.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => setTime(slot)}
-                  className={`px-3 py-2 rounded-xl text-sm border transition ${
-                    time === slot
-                      ? "border-primary bg-primary text-white"
-                      : "border-gray-200 hover:border-gray-400"
-                  }`}
-                >
-                  {slot}
-                </button>
-              ))}
+              {TIME_SLOTS.map((slot) => {
+                const past = isSlotPast(slot, day, month, year);
+                const selected = time === slot;
+
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    disabled={past}
+                    onClick={() => !past && setTime(slot)}
+                    title={past ? "Это время уже прошло" : undefined}
+                    className={`px-3 py-2 rounded-xl text-sm border transition ${
+                      past
+                        ? "border-gray-100 bg-gray-100 text-gray-300 cursor-not-allowed line-through"
+                        : selected
+                        ? "border-primary bg-primary text-white"
+                        : "border-gray-200 hover:border-gray-400"
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                );
+              })}
             </div>
+
+            {isToday(day, month, year) && (
+              <p className="text-xs text-gray-400 mt-2">
+                Для сегодняшнего дня доступны только слоты, которые ещё не начались.
+              </p>
+            )}
           </div>
 
           {/* Имя и телефон */}
