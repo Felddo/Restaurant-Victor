@@ -1,18 +1,21 @@
 import { useState } from "react";
 import type { TFooterPlaces } from "../../types/types";
 
+type TBooking = {
+  place: string;
+  date: string;   // ISO yyyy-mm-dd для бэкенда
+  dateLabel: string; // dd/mm/yyyy для отображения
+  time: string;
+  guests: number;
+  name: string;
+  phone: string;
+};
+
 type Props = {
   places: TFooterPlaces[];
   totalPrice: number;
   onClose: () => void;
-  onConfirm: (data: {
-    place: string;
-    date: string;
-    time: string;
-    guests: number;
-    name: string;
-    phone: string;
-  }) => void;
+  onConfirm: (data: TBooking) => void;
 };
 
 const TIME_SLOTS = [
@@ -30,32 +33,105 @@ const TIME_SLOTS = [
 
 const GUEST_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-// Сегодняшняя дата в формате YYYY-MM-DD
-const getTodayISO = () => {
-  const d = new Date();
-  const tz = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tz).toISOString().split("T")[0];
+const MONTHS = [
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+
+// Текущая дата (локальная) в виде {d, m, y}
+const getToday = () => {
+  const now = new Date();
+  return {
+    d: now.getDate(),
+    m: now.getMonth() + 1,
+    y: now.getFullYear(),
+  };
 };
 
-export const BookingModal = ({ places, totalPrice, onClose, onConfirm }: Props) => {
-  const today = getTodayISO();
+// Сравнение дат: true, если (d/m/y) >= сегодня
+const isNotPast = (d: number, m: number, y: number) => {
+  const today = getToday();
+  if (y > today.y) return true;
+  if (y < today.y) return false;
+  if (m > today.m) return true;
+  if (m < today.m) return false;
+  return d >= today.d;
+};
+
+// Сколько дней в месяце
+const daysInMonth = (m: number, y: number) =>
+  new Date(y, m, 0).getDate();
+
+// Формат dd/mm/yyyy
+const pad = (n: number) => String(n).padStart(2, "0");
+const formatDMY = (d: number, m: number, y: number) =>
+  `${pad(d)}/${pad(m)}/${y}`;
+
+// ISO для бэкенда
+const formatISO = (d: number, m: number, y: number) =>
+  `${y}-${pad(m)}-${pad(d)}`;
+
+export const BookingModal = ({
+  places,
+  totalPrice,
+  onClose,
+  onConfirm,
+}: Props) => {
+  const today = getToday();
 
   const [place, setPlace] = useState<string>(places[0]?.name ?? "");
-  const [date, setDate] = useState<string>(today);
+  const [day, setDay] = useState<number>(today.d);
+  const [month, setMonth] = useState<number>(today.m);
+  const [year, setYear] = useState<number>(today.y);
   const [time, setTime] = useState<string>("");
   const [guests, setGuests] = useState<number>(2);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
 
+  // Годы: текущий и +1
+  const years = [today.y, today.y + 1];
+
+  // Если сменили месяц/год — обрежем день, если он превышает длину месяца
+  const handleMonthChange = (newMonth: number) => {
+    setMonth(newMonth);
+    const maxDay = daysInMonth(newMonth, year);
+    if (day > maxDay) setDay(maxDay);
+  };
+
+  const handleYearChange = (newYear: number) => {
+    setYear(newYear);
+    const maxDay = daysInMonth(month, newYear);
+    if (day > maxDay) setDay(maxDay);
+  };
+
+  const maxDay = daysInMonth(month, year);
+  const days = Array.from({ length: maxDay }, (_, i) => i + 1);
+
   const handleConfirm = () => {
-    if (!place || !date || !time || !name.trim() || !phone.trim()) {
+    if (!place || !time || !name.trim() || !phone.trim()) {
       setError("Заполните все поля, чтобы мы знали, кого, где и когда ждать.");
       return;
     }
+
+    if (!isNotPast(day, month, year)) {
+      setError("Дата не может быть раньше сегодняшней.");
+      return;
+    }
+
     setError("");
-    onConfirm({ place, date, time, guests, name, phone });
+    onConfirm({
+      place,
+      date: formatISO(day, month, year),
+      dateLabel: formatDMY(day, month, year),
+      time,
+      guests,
+      name,
+      phone,
+    });
   };
+
+  const previewDate = formatDMY(day, month, year);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -104,37 +180,79 @@ export const BookingModal = ({ places, totalPrice, onClose, onConfirm }: Props) 
           </div>
         </div>
 
-        {/* Дата и количество гостей */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">
-              Дата
-            </label>
-            <input
-              type="date"
-              min={today}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">
-              Гостей
-            </label>
+        {/* Дата: три поля — день / месяц / год */}
+        <div>
+          <label className="block text-sm font-semibold mb-2 text-gray-700">
+            Дата (дд/мм/гггг)
+          </label>
+          <div className="grid grid-cols-3 gap-2">
             <select
-              value={guests}
-              onChange={(e) => setGuests(Number(e.target.value))}
-              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none bg-white"
+              value={day}
+              onChange={(e) => setDay(Number(e.target.value))}
+              className="px-3 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none bg-white"
+              aria-label="День"
             >
-              {GUEST_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n} {n === 1 ? "гость" : n < 5 ? "гостя" : "гостей"}
+              {days.map((d) => (
+                <option key={d} value={d}>
+                  {pad(d)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={month}
+              onChange={(e) => handleMonthChange(Number(e.target.value))}
+              className="px-3 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none bg-white"
+              aria-label="Месяц"
+            >
+              {MONTHS.map((_, idx) => (
+                <option key={idx + 1} value={idx + 1}>
+                  {pad(idx + 1)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={year}
+              onChange={(e) => handleYearChange(Number(e.target.value))}
+              className="px-3 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none bg-white"
+              aria-label="Год"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
                 </option>
               ))}
             </select>
           </div>
+
+          {/* Превью выбранной даты */}
+          <p className="text-xs text-gray-500 mt-2">
+            Вы выбрали: <span className="font-semibold">{previewDate}</span>
+            {!isNotPast(day, month, year) && (
+              <span className="text-red-500 ml-2">
+                (дата уже прошла — выберите другую)
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Количество гостей */}
+        <div>
+          <label className="block text-sm font-semibold mb-2 text-gray-700">
+            Гостей
+          </label>
+          <select
+            value={guests}
+            onChange={(e) => setGuests(Number(e.target.value))}
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none bg-white"
+          >
+            {GUEST_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n} {n === 1 ? "гость" : n < 5 ? "гостя" : "гостей"}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Время */}

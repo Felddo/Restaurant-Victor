@@ -7,7 +7,8 @@ import { BookingModal } from "./auxiliary/BookingModal";
 
 type TBooking = {
   place: string;
-  date: string;
+  date: string;      // ISO yyyy-mm-dd
+  dateLabel: string; // dd/mm/yyyy
   time: string;
   guests: number;
   name: string;
@@ -50,13 +51,13 @@ export const CartPage = () => {
               <span className="font-semibold">{bookingInfo.place}</span>
             </p>
             <p className="text-gray-700 mb-1">
-              {bookingInfo.date} · {bookingInfo.time}
+              {bookingInfo.dateLabel} · {bookingInfo.time}
             </p>
             <p className="text-gray-700 mb-1">
               Гостей: {bookingInfo.guests}
             </p>
             <p className="text-gray-500 text-sm mb-6">
-              {bookingInfo.name}, будем ждать вас!
+              {bookingInfo.name}, мы будем ждать вас в указанное время.
             </p>
             <Link
               to="/"
