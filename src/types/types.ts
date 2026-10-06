@@ -20,3 +20,8 @@ export type TFooterPlaces = {
   name: string;
   addres: string;
 };
+
+export type TOrderCard = {
+  isOpen: boolean;
+  onClose: () => void;
+};
